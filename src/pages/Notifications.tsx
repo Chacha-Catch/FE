@@ -1,5 +1,3 @@
-import { useState } from 'react'
-
 interface NotificationAlert {
   id: string
   keyword: string
