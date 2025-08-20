@@ -73,9 +73,26 @@ const Onboarding = () => {
             onChange={(e) => setDepartment(e.target.value)}
             className="text-sm w-full px-6 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-2 appearance-none"
           >
+            <option value="건축학과">건축학과</option>
+            <option value="건축공학과">건축공학과</option>
+            <option value="토목공학과">토목공학과</option>
+            <option value="환경공학과">환경공학과</option>
+            <option value="기계공학부">기계공학부</option>
+            <option value="메카트로닉스공학과">메카트로닉스공학과</option>
+            <option value="선박해양공학과">선박해양공학과</option>
+            <option value="항공우주공학과">항공우주공학과</option>
+            <option value="전기공학과">전기공학과</option>
+            <option value="전자공학과">전자공학과</option>
+            <option value="전파정보통신공학과">전파정보통신공학과</option>
             <option value="컴퓨터융합학부">컴퓨터융합학부</option>
-            <option value="경영학과">경영학과</option>
-            <option value="산업디자인학과">산업디자인학과</option>
+            <option value="인공지능학과">인공지능학과</option>
+            <option value="신소재공학과">신소재공학과</option>
+            <option value="응용화학공학과">응용화학공학과</option>
+            <option value="유기재료공학과">유기재료공학과</option>
+            <option value="자율운항시스템공학과">자율운항시스템공학과</option>
+            <option value="에너지공학과">에너지공학과</option>
+            <option value="정보통신융합학부">정보통신융합학부</option>
+            <option value="반도체융합학과">반도체융합학과</option>
           </select>
           <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
             <svg className="w-6 h-6 text-gray-800" fill="currentColor" viewBox="0 0 24 24">

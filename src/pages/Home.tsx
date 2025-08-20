@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import CharacterAlert from '../components/CharacterAlert'
 
 interface NotificationItem {
   id: string
@@ -6,12 +7,14 @@ interface NotificationItem {
   department: string
   date: string
   isBookmarked: boolean
+  isNew?: boolean // 새 글 여부 추가
 }
 
 const Home = () => {
   const [selectedCategory, setSelectedCategory] = useState('장학금')
   const [showSavedOnly, setShowSavedOnly] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
+  const [showCharacterAlert, setShowCharacterAlert] = useState(true) // 캐릭터 알림 표시 여부
   const itemsPerPage = 7
 
   const categories = ['장학금', '국제교류', '교내 행사', '대회', '튜터', '전과', '학과 행사']
@@ -22,7 +25,8 @@ const Home = () => {
       title: '[소프트웨어중심대학] (2025학년도 8월 졸업예정자 ) 소프트웨어중심대학사업단 특별 장학생 선발 안내(마일리지 환급)',
       department: '컴퓨터융합학부',
       date: '2025.08.05',
-      isBookmarked: true
+      isBookmarked: true,
+      isNew: true
     },
     {
       id: '2',
@@ -36,7 +40,8 @@ const Home = () => {
       title: '2025학년도 제2학기 교내 장학생(재학생) 선발 계획 안내',
       department: '충남대학교 학사정보',
       date: '2025.08.04',
-      isBookmarked: true
+      isBookmarked: true,
+      isNew: true
     },
     {
       id: '4',
@@ -57,7 +62,8 @@ const Home = () => {
       title: '2025학년도 2학기 교내장학생 선발을 위한 장학서류 제출안내(추가 모집)',
       department: '컴퓨터융합학부',
       date: '2025.08.03',
-      isBookmarked: true
+      isBookmarked: true,
+      isNew: true
     },
     {
       id: '7',
@@ -95,6 +101,14 @@ const Home = () => {
     console.log('북마크 토글:', id)
   }
 
+  // 캐릭터 알림 닫기
+  const closeCharacterAlert = () => {
+    setShowCharacterAlert(false)
+  }
+
+  // 새로운 알림 개수 확인
+  const newNotificationsCount = notifications.filter(item => item.isNew).length
+
   const filteredNotifications = notifications.filter(item => {
     if (showSavedOnly) return item.isBookmarked
     // 실제로는 selectedCategory에 따른 필터링 로직 필요
@@ -116,7 +130,15 @@ const Home = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white min-h-screen">
+    <div className="max-w-4xl mx-auto p-6 bg-white min-h-screen relative">
+      {/* 캐릭터 알림 컴포넌트 */}
+      {showCharacterAlert && (
+        <CharacterAlert 
+          newNotificationsCount={newNotificationsCount}
+          onClose={closeCharacterAlert}
+        />
+      )}
+
       {/* Categories */}
       <div className="mb-6">
         <h2 className="text-xl font-bold mb-4">카테고리</h2>
@@ -155,10 +177,17 @@ const Home = () => {
          {currentNotifications.map((item) => (
           <div
             key={item.id}
-            className={`px-6 py-4 rounded-2xl border transition-colors hover:shadow-md bg-white ${
+            className={`px-6 py-4 rounded-2xl border transition-colors hover:shadow-md bg-white relative ${
               item.isBookmarked ? 'border-navy' : 'border-gray-200'
-            }`}
+            } ${item.isNew ? 'border-l-4 border-l-blue-500' : ''}`}
           >
+            {/* NEW 뱃지 */}
+            {item.isNew && (
+              <div className="absolute top-4 right-16 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                NEW
+              </div>
+            )}
+            
             <div className="flex justify-between items-start">
               <div className="flex-1">
                 <h3 className="text-lg font-medium text-gray-900 mb-2 leading-tight">
