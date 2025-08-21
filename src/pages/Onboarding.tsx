@@ -73,7 +73,7 @@ const Onboarding = () => {
             onChange={(e) => setDepartment(e.target.value)}
             className="text-sm w-full px-6 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-2 appearance-none"
           >
-            <option value="건축학과">건축학과</option>
+            {/* <option value="건축학과">건축학과</option>
             <option value="건축공학과">건축공학과</option>
             <option value="토목공학과">토목공학과</option>
             <option value="환경공학과">환경공학과</option>
@@ -83,7 +83,7 @@ const Onboarding = () => {
             <option value="항공우주공학과">항공우주공학과</option>
             <option value="전기공학과">전기공학과</option>
             <option value="전자공학과">전자공학과</option>
-            <option value="전파정보통신공학과">전파정보통신공학과</option>
+            <option value="전파정보통신공학과">전파정보통신공학과</option> */}
             <option value="컴퓨터융합학부">컴퓨터융합학부</option>
             <option value="인공지능학과">인공지능학과</option>
             <option value="신소재공학과">신소재공학과</option>

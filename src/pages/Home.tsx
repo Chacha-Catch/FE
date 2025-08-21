@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import CharacterAlert from '../components/CharacterAlert'
+import NotificationModal from '../components/NotificationModal'
 
 interface NotificationItem {
   id: string
@@ -8,6 +9,9 @@ interface NotificationItem {
   date: string
   isBookmarked: boolean
   isNew?: boolean // 새 글 여부 추가
+  content: string
+  image?: string
+  originalLink: string
 }
 
 const Home = () => {
@@ -15,6 +19,8 @@ const Home = () => {
   const [showSavedOnly, setShowSavedOnly] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [showCharacterAlert, setShowCharacterAlert] = useState(true) // 캐릭터 알림 표시 여부
+  const [selectedNotification, setSelectedNotification] = useState<NotificationItem | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const itemsPerPage = 7
 
   const categories = ['장학금', '국제교류', '교내 행사', '대회', '튜터', '전과', '학과 행사']
@@ -26,14 +32,19 @@ const Home = () => {
       department: '컴퓨터융합학부',
       date: '2025.08.05',
       isBookmarked: true,
-      isNew: true
+      isNew: true,
+      content: '소프트웨어중심대학사업단에서 안내드립니다.\n\n2025 하계 AI특강 신청 안내(-8/12 화)\n\n소프트웨어중심대학사업단에서는 안내 드립니다.\n\n2025 하계 AI특강을 다음과 같이 진행하오니 참여를 원하는 학생들은 많은 신청 바랍니다.\n\n- 주제: AI 활용 및 AI AGENT 구현 마스터 클래스\n- 일시: 2025. 8. 18.(월) ~ 8. 22.(금) 13:00-18:00\n- 장소: 공과5호관-종합1 동아리실(전정 1층)\n- 대상: 전교생\n- 신청 기간 - 2025. 8. 12(월)까지',
+      image: '/api/placeholder/400/300',
+      originalLink: 'https://cse.cnu.ac.kr/bbs/board.php?bo_table=sub5_1&wr_id=1234'
     },
     {
       id: '2',
       title: '2025학년도 2학기 교내장학생 선발을 위한 장학서류 제출안내(신청자는 이메일로 먼저 제출)',
       department: '컴퓨터융합학부',
       date: '2025.08.04',
-      isBookmarked: false
+      isBookmarked: false,
+      content: '2025학년도 2학기 교내장학생 선발을 위한 서류 제출에 대해 안내드립니다.\n\n신청을 원하는 학생은 먼저 이메일로 신청서를 제출하시기 바랍니다.',
+      originalLink: 'https://cse.cnu.ac.kr/bbs/board.php?bo_table=sub5_1&wr_id=1235'
     },
     {
       id: '3',
@@ -41,21 +52,27 @@ const Home = () => {
       department: '충남대학교 학사정보',
       date: '2025.08.04',
       isBookmarked: true,
-      isNew: true
+      isNew: true,
+      content: '2025학년도 제2학기 교내 장학생(재학생) 선발 계획을 안내드립니다.\n\n자세한 내용은 첨부파일을 참조하시기 바랍니다.',
+      originalLink: 'https://www.cnu.ac.kr/bbs/board.php?bo_table=notice&wr_id=1236'
     },
     {
       id: '4',
       title: '2026년 소아·청소년 당뇨인 푸른빛 희망 장학금 지원 안내',
       department: '충남대학교 학사정보',
       date: '2025.08.04',
-      isBookmarked: false
+      isBookmarked: false,
+      content: '2026년 소아·청소년 당뇨인 푸른빛 희망 장학금 지원에 대해 안내드립니다.\n\n해당하는 학생들의 많은 신청 바랍니다.',
+      originalLink: 'https://www.cnu.ac.kr/bbs/board.php?bo_table=notice&wr_id=1237'
     },
     {
       id: '5',
       title: '[소프트웨어중심대학] (2025학년도 8월 졸업예정자 ) 소프트웨어중심대학사업단 특별 장학생 선발 안내(마일리지 환급)',
       department: '컴퓨터융합학부',
       date: '2025.08.05',
-      isBookmarked: false
+      isBookmarked: false,
+      content: '소프트웨어중심대학사업단 특별 장학생 선발 안내입니다.\n\n8월 졸업예정자를 대상으로 합니다.',
+      originalLink: 'https://cse.cnu.ac.kr/bbs/board.php?bo_table=sub5_1&wr_id=1238'
     },
     {
       id: '6',
@@ -63,35 +80,45 @@ const Home = () => {
       department: '컴퓨터융합학부',
       date: '2025.08.03',
       isBookmarked: true,
-      isNew: true
+      isNew: true,
+      content: '교내장학생 선발을 위한 추가 모집을 실시합니다.\n\n필요한 서류를 준비하여 제출하시기 바랍니다.',
+      originalLink: 'https://cse.cnu.ac.kr/bbs/board.php?bo_table=sub5_1&wr_id=1239'
     },
     {
       id: '7',
       title: '2025학년도 하계방학 중 해외인턴십 프로그램 참가자 모집',
       department: '충남대학교 학사정보',
       date: '2025.08.02',
-      isBookmarked: false
+      isBookmarked: false,
+      content: '하계방학 중 해외인턴십 프로그램 참가자를 모집합니다.\n\n글로벌 경험을 쌓을 수 있는 좋은 기회입니다.',
+      originalLink: 'https://www.cnu.ac.kr/bbs/board.php?bo_table=notice&wr_id=1240'
     },
     {
       id: '8',
       title: '2025학년도 2학기 SW특기자 전형 추가 모집 안내',
       department: '컴퓨터융합학부',
       date: '2025.08.01',
-      isBookmarked: false
+      isBookmarked: false,
+      content: 'SW특기자 전형 추가 모집을 실시합니다.\n\n관심 있는 학생들의 많은 지원 바랍니다.',
+      originalLink: 'https://cse.cnu.ac.kr/bbs/board.php?bo_table=sub5_1&wr_id=1241'
     },
     {
       id: '9',
       title: '[장학] 2025년 하반기 교내장학금 신청 안내 (성적우수, 가계곤란)',
       department: '충남대학교 학사정보',
       date: '2025.07.31',
-      isBookmarked: true
+      isBookmarked: true,
+      content: '2025년 하반기 교내장학금 신청을 안내드립니다.\n\n성적우수장학금과 가계곤란장학금을 신청할 수 있습니다.',
+      originalLink: 'https://www.cnu.ac.kr/bbs/board.php?bo_table=notice&wr_id=1242'
     },
     {
       id: '10',
       title: '[국제교류] 2025년 하반기 해외교환학생 프로그램 신청 안내',
       department: '충남대학교 학사정보',
       date: '2025.07.30',
-      isBookmarked: false
+      isBookmarked: false,
+      content: '2025년 하반기 해외교환학생 프로그램 신청을 안내드립니다.\n\n다양한 국가의 대학교와 교환학생 프로그램을 진행합니다.',
+      originalLink: 'https://www.cnu.ac.kr/bbs/board.php?bo_table=notice&wr_id=1243'
     }
     
   ]
@@ -108,6 +135,18 @@ const Home = () => {
 
   // 새로운 알림 개수 확인
   const newNotificationsCount = notifications.filter(item => item.isNew).length
+
+  // 공지사항 클릭 핸들러
+  const handleNotificationClick = (notification: NotificationItem) => {
+    setSelectedNotification(notification)
+    setIsModalOpen(true)
+  }
+
+  // 모달 닫기
+  const closeModal = () => {
+    setIsModalOpen(false)
+    setSelectedNotification(null)
+  }
 
   const filteredNotifications = notifications.filter(item => {
     if (showSavedOnly) return item.isBookmarked
@@ -138,6 +177,14 @@ const Home = () => {
           onClose={closeCharacterAlert}
         />
       )}
+
+      {/* 공지사항 상세 모달 */}
+      <NotificationModal
+        notification={selectedNotification}
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        onToggleBookmark={toggleBookmark}
+      />
 
       {/* Categories */}
       <div className="mb-6">
@@ -177,9 +224,10 @@ const Home = () => {
          {currentNotifications.map((item) => (
           <div
             key={item.id}
-            className={`px-6 py-4 rounded-2xl border transition-colors hover:shadow-md bg-white relative ${
+            className={`px-6 py-4 rounded-2xl border transition-colors hover:shadow-md bg-white relative cursor-pointer ${
               item.isBookmarked ? 'border-navy' : 'border-gray-200'
-            } ${item.isNew ? 'border-l-4 border-l-blue-500' : ''}`}
+            } ${item.isNew ? ' border-l-blue-500' : ''}`}
+            onClick={() => handleNotificationClick(item)}
           >
             {/* NEW 뱃지 */}
             {item.isNew && (
@@ -199,7 +247,10 @@ const Home = () => {
                 </div>
               </div>
               <button
-                onClick={() => toggleBookmark(item.id)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  toggleBookmark(item.id)
+                }}
                 className="ml-4 p-2"
               >
                 <svg 

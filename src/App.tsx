@@ -5,14 +5,19 @@ import Onboarding from '@/pages/Onboarding'
 import Search from '@/pages/Search'
 import Notifications from '@/pages/Notifications'
 import Login from '@/pages/Login'
+import OAuthCallback from '@/pages/OAuthCallback'
 import BottomNavigation from '@/components/BottomNavigation'
+import Header from '@/components/Header'
+import { AuthProvider } from '@/contexts/AuthContext'
 
 const AppContent = () => {
   const location = useLocation()
-  const hideNavigation = location.pathname === '/onboarding' || location.pathname === '/login'
+  const hideNavigation = location.pathname === '/onboarding' || location.pathname === '/login' || location.pathname === '/oauth/callback'
+  const showHeader = !hideNavigation
 
   return (
     <div className="App">
+      {showHeader && <Header />}
       <main style={{ 
         maxWidth: '1200px', 
         margin: '0 auto', 
@@ -25,6 +30,7 @@ const AppContent = () => {
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/search" element={<Search />} />
           <Route path="/notifications" element={<Notifications />} />
+          <Route path="/oauth/callback" element={<OAuthCallback />} />
         </Routes>
       </main>
       {!hideNavigation && <BottomNavigation />}
@@ -34,9 +40,11 @@ const AppContent = () => {
 
 function App() {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <AuthProvider>
+      <Router>
+        <AppContent />
+      </Router>
+    </AuthProvider>
   )
 }
 

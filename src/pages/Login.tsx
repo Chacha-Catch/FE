@@ -9,19 +9,58 @@ const Login = () => {
     setIsLoading(true)
     
     try {
-      // Google OAuth 로그인 로직을 여기에 구현
-      // 실제 프로덕션에서는 Google OAuth 라이브러리 사용
-      console.log('Google 로그인 시도...')
+      // Google OAuth 팝업 창 열기
+      const redirectUri = encodeURIComponent(window.location.origin + '/oauth/callback')
+      const googleAuthUrl = `http://1.201.18.172:8080/oauth/login/google?redirect_uri=${redirectUri}`
       
-      // 임시로 2초 대기 후 홈으로 이동
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      // 팝업 창으로 Google 인증 페이지 열기
+      const popup = window.open(
+        googleAuthUrl,
+        'google-login',
+        'width=500,height=600,scrollbars=yes,resizable=yes'
+      )
       
-      // 로그인 성공 시 홈으로 이동
-      navigate('/')
+      if (!popup) {
+        throw new Error('팝업이 차단되었습니다. 팝업 차단을 해제해주세요.')
+      }
+      
+      // 팝업에서 인증 완료 메시지 대기
+      const handleMessage = (event: MessageEvent) => {
+        if (event.origin !== window.location.origin) return
+        
+        if (event.data.type === 'GOOGLE_LOGIN_SUCCESS') {
+          const { accessToken, refreshToken, user } = event.data
+          
+          // 토큰을 로컬 스토리지에 저장
+          localStorage.setItem('accessToken', accessToken)
+          localStorage.setItem('refreshToken', refreshToken)
+          localStorage.setItem('user', JSON.stringify(user))
+          
+          // 팝업 닫기
+          popup.close()
+          
+          // 홈으로 이동
+          navigate('/')
+        } else if (event.data.type === 'GOOGLE_LOGIN_ERROR') {
+          throw new Error(event.data.error || '로그인에 실패했습니다.')
+        }
+      }
+      
+      // 메시지 이벤트 리스너 등록
+      window.addEventListener('message', handleMessage)
+      
+      // 팝업이 닫혔는지 주기적으로 확인
+      const checkClosed = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkClosed)
+          window.removeEventListener('message', handleMessage)
+          setIsLoading(false)
+        }
+      }, 1000)
+      
     } catch (error) {
       console.error('로그인 실패:', error)
       alert('로그인에 실패했습니다. 다시 시도해주세요.')
-    } finally {
       setIsLoading(false)
     }
   }
