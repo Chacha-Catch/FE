@@ -1,68 +1,41 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 
 const Login = () => {
   const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
+  const { isAuthenticated, login } = useAuth()
 
-  const handleGoogleLogin = async () => {
+  // 이미 로그인된 경우 홈으로 리다이렉트
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/')
+    }
+  }, [isAuthenticated, navigate])
+
+  const handleGoogleLogin = () => {
     setIsLoading(true)
     
-    try {
-      // Google OAuth 팝업 창 열기
-      const redirectUri = encodeURIComponent(window.location.origin + '/oauth/callback')
-      const googleAuthUrl = `http://1.201.18.172:8080/oauth/login/google?redirect_uri=${redirectUri}`
-      
-      // 팝업 창으로 Google 인증 페이지 열기
-      const popup = window.open(
-        googleAuthUrl,
-        'google-login',
-        'width=500,height=600,scrollbars=yes,resizable=yes'
-      )
-      
-      if (!popup) {
-        throw new Error('팝업이 차단되었습니다. 팝업 차단을 해제해주세요.')
-      }
-      
-      // 팝업에서 인증 완료 메시지 대기
-      const handleMessage = (event: MessageEvent) => {
-        if (event.origin !== window.location.origin) return
-        
-        if (event.data.type === 'GOOGLE_LOGIN_SUCCESS') {
-          const { accessToken, refreshToken, user } = event.data
-          
-          // 토큰을 로컬 스토리지에 저장
-          localStorage.setItem('accessToken', accessToken)
-          localStorage.setItem('refreshToken', refreshToken)
-          localStorage.setItem('user', JSON.stringify(user))
-          
-          // 팝업 닫기
-          popup.close()
-          
-          // 홈으로 이동
-          navigate('/')
-        } else if (event.data.type === 'GOOGLE_LOGIN_ERROR') {
-          throw new Error(event.data.error || '로그인에 실패했습니다.')
-        }
-      }
-      
-      // 메시지 이벤트 리스너 등록
-      window.addEventListener('message', handleMessage)
-      
-      // 팝업이 닫혔는지 주기적으로 확인
-      const checkClosed = setInterval(() => {
-        if (popup.closed) {
-          clearInterval(checkClosed)
-          window.removeEventListener('message', handleMessage)
-          setIsLoading(false)
-        }
-      }, 1000)
-      
-    } catch (error) {
-      console.error('로그인 실패:', error)
-      alert('로그인에 실패했습니다. 다시 시도해주세요.')
+    // Google OAuth 직접 리다이렉트 방식
+    const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
+    const REDIRECT_URI = window.location.origin + '/oauth/callback'
+    
+    if (!GOOGLE_CLIENT_ID) {
+      console.error('Google Client ID가 설정되지 않았습니다.')
+      alert('환경설정 오류: Google Client ID가 없습니다.')
       setIsLoading(false)
+      return
     }
+    
+    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+      `client_id=${GOOGLE_CLIENT_ID}` +
+      `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
+      `&response_type=token` +
+      `&scope=email profile`
+    
+    // 현재 페이지를 Google 인증 페이지로 리다이렉트
+    window.location.href = googleAuthUrl
   }
 
   return (

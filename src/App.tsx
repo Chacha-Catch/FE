@@ -8,6 +8,7 @@ import Login from '@/pages/Login'
 import OAuthCallback from '@/pages/OAuthCallback'
 import BottomNavigation from '@/components/BottomNavigation'
 import Header from '@/components/Header'
+import ProtectedRoute from '@/components/ProtectedRoute'
 import { AuthProvider } from '@/contexts/AuthContext'
 
 const AppContent = () => {
@@ -25,11 +26,27 @@ const AppContent = () => {
         paddingBottom: hideNavigation ? '0' : '80px' 
       }}>
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          } />
           <Route path="/login" element={<Login />} />
-          <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/search" element={<Search />} />
-          <Route path="/notifications" element={<Notifications />} />
+          <Route path="/onboarding" element={
+            <ProtectedRoute>
+              <Onboarding />
+            </ProtectedRoute>
+          } />
+          <Route path="/search" element={
+            <ProtectedRoute>
+              <Search />
+            </ProtectedRoute>
+          } />
+          <Route path="/notifications" element={
+            <ProtectedRoute>
+              <Notifications />
+            </ProtectedRoute>
+          } />
           <Route path="/oauth/callback" element={<OAuthCallback />} />
         </Routes>
       </main>

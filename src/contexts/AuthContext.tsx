@@ -44,57 +44,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const accessToken = localStorage.getItem('accessToken')
       const savedUser = localStorage.getItem('user')
       
+      // 로컬 스토리지에 토큰과 사용자 정보가 있으면 로그인된 것으로 간주
       if (accessToken && savedUser) {
-        // 토큰 유효성 검사
-        const response = await fetch('http://1.201.18.172:8080/api/auth/verify', {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`
-          }
-        })
-        
-        if (response.ok) {
-          setUser(JSON.parse(savedUser))
-        } else {
-          // 토큰이 만료된 경우 리프레시 시도
-          await refreshToken()
-        }
+        setUser(JSON.parse(savedUser))
       }
     } catch (error) {
       console.error('Auth status check failed:', error)
       logout()
     } finally {
       setIsLoading(false)
-    }
-  }
-
-  const refreshToken = async () => {
-    try {
-      const refreshTokenValue = localStorage.getItem('refreshToken')
-      if (!refreshTokenValue) {
-        throw new Error('No refresh token')
-      }
-
-      const response = await fetch('http://1.201.18.172:8080/api/auth/refresh', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          refreshToken: refreshTokenValue
-        })
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        localStorage.setItem('accessToken', data.accessToken)
-        localStorage.setItem('user', JSON.stringify(data.user))
-        setUser(data.user)
-      } else {
-        throw new Error('Token refresh failed')
-      }
-    } catch (error) {
-      console.error('Token refresh failed:', error)
-      logout()
     }
   }
 

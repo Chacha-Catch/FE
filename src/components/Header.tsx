@@ -33,7 +33,7 @@ const Header = () => {
               alt="차차캐치 로고" 
               className="h-12 object-contain"
             />
-                          <h1 className="text-2xl font-bold text-navy" style={{ fontFamily: 'yg-jalnan, sans-serif' }}>
+              <h1 className="text-2xl font-bold text-navy" style={{ fontFamily: 'yg-jalnan, sans-serif' }}>
                 차차캐치
               </h1>
           </button>
