@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext'
 const Login = () => {
   const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
-  const { isAuthenticated, login } = useAuth()
+  const { isAuthenticated } = useAuth()
 
   // 이미 로그인된 경우 홈으로 리다이렉트
   useEffect(() => {
