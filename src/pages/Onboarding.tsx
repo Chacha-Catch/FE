@@ -152,14 +152,10 @@ const Onboarding = () => {
       localStorage.setItem('onboarding_completed', 'true')
       localStorage.setItem('onboarding_data', JSON.stringify(onboardingData))
       
-      // 첫 방문이었다면 홈으로 이동
-      if (isFirstVisit) {
-        setIsFirstVisit(false)
-        navigate('/')
-      } else {
-        // 마이페이지 수정이었다면 저장 완료 알림
-        alert('설정이 저장되었습니다!')
-      }
+      // 저장 완료 알림 후 홈으로 이동
+      alert('설정이 저장되었습니다!')
+      setIsFirstVisit(false)
+      navigate('/')
       
     } catch (error) {
       console.error('프로필 저장 실패:', error)
