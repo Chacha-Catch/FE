@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import CharacterAlert from '../components/CharacterAlert'
 import NotificationModal from '../components/NotificationModal'
-import { getNotices, toggleBookmark as apiToggleBookmark, transformApiNotice } from '../services/api'
-import type { NotificationItem } from '../services/api'
+import { getNotices, getSavedNotices, toggleBookmark as apiToggleBookmark, transformApiNotice, getCategories } from '../services/api'
+import type { NotificationItem, Category } from '../services/api'
 
 const Home = () => {
   const [selectedCategory, setSelectedCategory] = useState('장학금')
@@ -12,24 +12,79 @@ const Home = () => {
   const [selectedNotification, setSelectedNotification] = useState<NotificationItem | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(false)
   const [totalPages, setTotalPages] = useState(1)
-  const itemsPerPage = 7
+  const [bookmarkLoading, setBookmarkLoading] = useState<string | null>(null) // 북마크 로딩 상태
 
-  const categories = ['장학금', '국제교류', '교내 행사', '대회', '튜터', '전과', '학과 행사']
+  // API에서 카테고리 데이터 가져오기
+  const fetchCategories = async () => {
+    try {
+      const categoryData = await getCategories()
+      setCategories(categoryData)
+      // 첫 번째 카테고리를 기본 선택값으로 설정
+      if (categoryData.length > 0 && !selectedCategory) {
+        setSelectedCategory(categoryData[0].name)
+      }
+    } catch (error) {
+      console.error('카테고리 조회 실패:', error)
+      // 에러 발생 시 기본 카테고리로 설정
+      setCategories([
+        { id: 1, name: '장학금' },
+        { id: 2, name: '국제교류' },
+        { id: 3, name: '교내 행사' },
+        { id: 4, name: '대회' },
+        { id: 5, name: '튜터' },
+        { id: 6, name: '전과' },
+        { id: 7, name: '학과 행사' },
+        { id: 8, name: '강의' },
+        { id: 9, name: '인턴십' },
+        { id: 10, name: '멘토' },
+        { id: 11, name: '교환학생' },
+        { id: 12, name: '학사 행사' }
+      ])
+    }
+  }
 
   // API에서 공지사항 데이터 가져오기
   const fetchNotifications = async () => {
     setLoading(true)
     try {
-      const response = await getNotices({
-        page: currentPage,
-        size: itemsPerPage,
-        category: selectedCategory,
-        bookmarkedOnly: showSavedOnly
-      })
+      // 선택된 카테고리의 ID 찾기
+      const selectedCategoryObj = categories.find(cat => cat.name === selectedCategory)
+      const categoryId = selectedCategoryObj?.id
       
-      const transformedNotifications = response.notices.map(transformApiNotice)
+      if (!categoryId) {
+        console.warn('카테고리 ID를 찾을 수 없습니다:', selectedCategory)
+        setNotifications([])
+        setLoading(false)
+        return
+      }
+      
+      let response
+      
+      if (showSavedOnly) {
+        // 저장된 공지사항만 가져오기
+        console.log('🔖 저장된 공지사항 조회:', { page: currentPage, categoryId })
+        response = await getSavedNotices({
+          page: currentPage,
+          categoryId: categoryId
+        })
+        console.log('✅ 저장된 공지사항 응답:', response)
+      } else {
+        // 모든 공지사항 가져오기
+        console.log('📋 전체 공지사항 조회:', { page: currentPage, categoryId })
+        response = await getNotices({
+          page: currentPage,
+          categoryId: categoryId
+        })
+        console.log('✅ 전체 공지사항 응답:', response)
+      }
+      
+      const transformedNotifications = response.content.map(transformApiNotice)
+      console.log('🏠 Home - 변환된 공지사항들:', transformedNotifications)
+      console.log('🏠 Home - 총 페이지 수:', response.totalPages)
+      
       setNotifications(transformedNotifications)
       setTotalPages(response.totalPages)
     } catch (error) {
@@ -41,16 +96,33 @@ const Home = () => {
     }
   }
 
-  // 컴포넌트 마운트 시 및 필터 변경 시 데이터 로드
+  // 컴포넌트 마운트 시 카테고리 로드
   useEffect(() => {
-    fetchNotifications()
-  }, [currentPage, selectedCategory, showSavedOnly])
+    fetchCategories()
+  }, [])
+
+  // 필터 변경 시 데이터 로드
+  useEffect(() => {
+    if (selectedCategory && categories.length > 0) {
+      fetchNotifications()
+    }
+  }, [currentPage, selectedCategory, showSavedOnly, categories])
 
     // 북마크 토글 함수 수정
   const toggleBookmark = async (id: string) => {
+    if (bookmarkLoading === id) return // 이미 처리 중이면 무시
+    
     try {
+      setBookmarkLoading(id) // 로딩 시작
       const noticeId = parseInt(id)
-      const newBookmarkStatus = await apiToggleBookmark(noticeId)
+      
+      // 현재 북마크 상태 찾기
+      const currentItem = notifications.find(item => item.id === id)
+      if (!currentItem) {
+        throw new Error('공지사항을 찾을 수 없습니다.')
+      }
+      
+      const newBookmarkStatus = await apiToggleBookmark(noticeId, currentItem.isBookmarked)
       
       // 로컬 상태 업데이트
       setNotifications(prev => 
@@ -60,9 +132,13 @@ const Home = () => {
             : item
         )
       )
+      
+      console.log(`✅ 공지사항 ${newBookmarkStatus ? '저장' : '저장 해제'} 완료:`, currentItem.title)
     } catch (error) {
       console.error('북마크 토글 실패:', error)
       alert('북마크 변경에 실패했습니다.')
+    } finally {
+      setBookmarkLoading(null) // 로딩 종료
     }
   }
 
@@ -90,12 +166,16 @@ const Home = () => {
   const goToPreviousPage = () => {
     if (currentPage > 1) {
       setCurrentPage(prev => prev - 1)
+      // 페이지 변경 시 스크롤을 맨 위로 이동
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
 
   const goToNextPage = () => {
     if (currentPage < totalPages) {
       setCurrentPage(prev => prev + 1)
+      // 페이지 변경 시 스크롤을 맨 위로 이동
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
 
@@ -123,15 +203,15 @@ const Home = () => {
         <div className="flex flex-wrap gap-3">
           {categories.map((category) => (
             <button
-              key={category}
-              onClick={() => setSelectedCategory(category)}
+              key={category.id}
+              onClick={() => setSelectedCategory(category.name)}
               className={`px-6 py-2 rounded-full text-sm font-medium transition-colors ${
-                selectedCategory === category
+                selectedCategory === category.name
                   ? 'bg-gray-900 text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              {category}
+              {category.name}
             </button>
           ))}
         </div>
@@ -139,13 +219,15 @@ const Home = () => {
 
       {/* Filter Toggle */}
       <div className="flex justify-end mb-6">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <span className="text-sm text-gray-600">저장 게시글만 보기</span>
+        <label className="flex items-center gap-2 cursor-pointer group">
+          <span className={`text-sm transition-colors ${showSavedOnly ? 'text-navy font-medium' : 'text-gray-600 group-hover:text-gray-800'}`}>
+            {showSavedOnly ? '저장된 공지사항' : '저장 게시글만 보기'}
+          </span>
           <input
             type="checkbox"
             checked={showSavedOnly}
             onChange={(e) => setShowSavedOnly(e.target.checked)}
-            className="w-4 h-4 text-blue-600 rounded"
+            className="w-4 h-4 text-navy border-gray-300 rounded focus:ring-navy focus:ring-2"
           />
         </label>
       </div>
@@ -159,10 +241,17 @@ const Home = () => {
                <p className="text-gray-500">로딩 중...</p>
              </div>
            </div>
-         ) : notifications.length === 0 ? (
-           <div className="text-center py-12">
-             <p className="text-gray-500">공지사항이 없습니다.</p>
-           </div>
+                 ) : notifications.length === 0 ? (
+          <div className="text-center py-12">
+            {showSavedOnly ? (
+              <div>
+                <p className="text-gray-500 mb-2">저장된 공지사항이 없습니다.</p>
+                <p className="text-sm text-gray-400">공지사항을 북마크하면 여기에서 확인할 수 있습니다.</p>
+              </div>
+            ) : (
+              <p className="text-gray-500">공지사항이 없습니다.</p>
+            )}
+          </div>
          ) : (
            notifications.map((item) => (
           <div
@@ -194,21 +283,26 @@ const Home = () => {
                   e.stopPropagation()
                   toggleBookmark(item.id)
                 }}
-                className="ml-4 p-2"
+                disabled={bookmarkLoading === item.id}
+                className="ml-4 p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
               >
-                <svg 
-                  className={`w-6 h-6 ${item.isBookmarked ? 'text-navy' : 'text-gray-400'}`}
-                  fill={item.isBookmarked ? 'currentColor' : 'none'}
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeWidth={2} 
-                    d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" 
-                  />
-                </svg>
+                {bookmarkLoading === item.id ? (
+                  <div className="w-6 h-6 border-2 border-navy border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <svg 
+                    className={`w-6 h-6 ${item.isBookmarked ? 'text-navy' : 'text-gray-400'}`}
+                    fill={item.isBookmarked ? 'currentColor' : 'none'}
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" 
+                    />
+                  </svg>
+                )}
               </button>
             </div>
           </div>

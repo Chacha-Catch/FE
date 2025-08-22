@@ -1,4 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
+import { updateUserProfile } from '../services/api'
 
 interface NotificationCategory {
   id: string
@@ -12,6 +15,9 @@ interface Keyword {
 }
 
 const Onboarding = () => {
+  const navigate = useNavigate()
+  const { logout, user } = useAuth()
+  
   const [department, setDepartment] = useState('컴퓨터융합학부')
   const [grade, setGrade] = useState('2학년')
   const [status, setStatus] = useState('재학')
@@ -29,6 +35,41 @@ const Onboarding = () => {
     { id: '2', text: '프로젝트페어' }
   ])
   const [newKeyword, setNewKeyword] = useState('')
+  const [isFirstVisit, setIsFirstVisit] = useState(true) // 첫 방문 여부
+  const [isSaving, setIsSaving] = useState(false) // 저장 중 상태
+
+  // 첫 방문 여부 확인 및 이전 설정 불러오기
+  useEffect(() => {
+    const hasOnboardingData = localStorage.getItem('onboarding_completed')
+    const savedData = localStorage.getItem('onboarding_data')
+    
+    setIsFirstVisit(!hasOnboardingData)
+    
+    // 이전 설정이 있다면 불러오기
+    if (savedData) {
+      try {
+        const parsedData = JSON.parse(savedData)
+        setDepartment(parsedData.department || '컴퓨터융합학부')
+        setGrade(parsedData.grade || '2학년')
+        setStatus(parsedData.status || '재학')
+        
+        if (parsedData.notificationCategories) {
+          setNotificationCategories(prev => 
+            prev.map(cat => ({
+              ...cat,
+              selected: parsedData.notificationCategories.some((saved: any) => saved.id === cat.id)
+            }))
+          )
+        }
+        
+        if (parsedData.keywords) {
+          setKeywords(parsedData.keywords)
+        }
+      } catch (error) {
+        console.error('설정 불러오기 실패:', error)
+      }
+    }
+  }, [])
 
   const toggleCategory = (id: string) => {
     setNotificationCategories(prev => 
@@ -49,20 +90,91 @@ const Onboarding = () => {
     setKeywords(prev => prev.filter(k => k.id !== id))
   }
 
-  const handleSave = () => {
-    console.log('저장:', {
-      department,
-      grade,
-      status,
-      notificationCategories: notificationCategories.filter(cat => cat.selected),
-      keywords
-    })
+  const handleSave = async () => {
+    if (!user) {
+      alert('사용자 정보를 찾을 수 없습니다.')
+      return
+    }
+
+    setIsSaving(true)
+
+    try {
+      const onboardingData = {
+        department,
+        grade,
+        status,
+        notificationCategories: notificationCategories.filter(cat => cat.selected),
+        keywords
+      }
+      
+      console.log('저장:', onboardingData)
+      
+      // 년도를 숫자로 변환 (1학년 → 1)
+      const yearNumber = parseInt(grade.replace('학년', ''))
+      
+      // API로 프로필 업데이트
+      const profileData = {
+        name: user.name,
+        major: department,
+        year: yearNumber,
+        status: status,
+        googleId: user.id,
+        email: user.email
+      }
+      
+      console.log('🚀 API 프로필 업데이트 요청:', profileData)
+      
+      await updateUserProfile(profileData)
+      
+      console.log('✅ 프로필 업데이트 성공')
+      
+      // 온보딩 완료 표시 (로컬 스토리지)
+      localStorage.setItem('onboarding_completed', 'true')
+      localStorage.setItem('onboarding_data', JSON.stringify(onboardingData))
+      
+      // 첫 방문이었다면 홈으로 이동
+      if (isFirstVisit) {
+        setIsFirstVisit(false)
+        navigate('/')
+      } else {
+        // 마이페이지 수정이었다면 저장 완료 알림
+        alert('설정이 저장되었습니다!')
+      }
+      
+    } catch (error) {
+      console.error('프로필 저장 실패:', error)
+      alert('프로필 저장에 실패했습니다. 다시 시도해주세요.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleLogout = () => {
+    const confirmLogout = window.confirm('정말 로그아웃하시겠습니까?')
+    if (confirmLogout) {
+      logout()
+      navigate('/login')
+    }
   }
 
   return (
     <div 
       className="max-w-md mx-auto p-6 min-h-screen rounded-2xl" 
     >
+      {/* 뒤로가기 버튼 - 첫 방문이 아닐 때만 표시 */}
+      {!isFirstVisit && (
+        <div className="mb-6">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            <span className="text-base font-medium">뒤로가기</span>
+          </button>
+        </div>
+      )}
       <div className="mb-8">
         <p className="text-lg text-left font-bold mb-2">
           학과 <span className="text-red-500">*</span>
@@ -231,13 +343,33 @@ const Onboarding = () => {
         </div>
       </div>
 
+
       {/* Save Button */}
       <button
         onClick={handleSave}
-        className="w-full bg-navy hover:bg-navy/90 text-white py-4 rounded-2xl text-lg font-medium transition-colors"
+        disabled={isSaving}
+        className="w-full bg-navy hover:bg-navy/90 disabled:bg-navy/50 disabled:cursor-not-allowed text-white py-4 rounded-2xl text-lg font-medium transition-colors flex items-center justify-center gap-2"
       >
-        저장하기
+        {isSaving ? (
+          <>
+            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            <span>저장 중...</span>
+          </>
+        ) : (
+          <span>{isFirstVisit ? '설정 완료' : '저장하기'}</span>
+        )}
       </button>
+
+            {/* Logout Button - 첫 방문이 아닐 때만 표시 */}
+      {!isFirstVisit && (
+        <button
+          onClick={handleLogout}
+          className="w-full mt-4 bg-red-500 hover:bg-red-600 text-white py-3 rounded-2xl text-base font-medium transition-colors mb-4"
+        >
+          로그아웃
+        </button>
+      )}
+
     </div>
   )
 }

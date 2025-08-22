@@ -44,11 +44,11 @@ const Login = () => {
       <div className="flex-1 flex flex-col justify-center items-center px-6">
         {/* 로고/제목 영역 */}
         <div className="mb-12 text-center">
-          <h1 className="text-4xl font-bold text-navy mb-4">
+          <h1 className="text-4xl font-bold text-navy mb-4" style={{ fontFamily: 'yg-jalnan, sans-serif' }}>
             차차캐치
           </h1>
           <p className="text-gray-600 text-lg">
-            공지사항을 놓치지 마세요!
+            차차가 캐치해주는 공지사항
           </p>
         </div>
 
@@ -78,14 +78,6 @@ const Login = () => {
             )}
           </button>
 
-          {/* 추가 정보 */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-500">
-              로그인하면 차차캐치의{' '}
-              <span className="text-navy underline cursor-pointer">이용약관</span>과{' '}
-              <span className="text-navy underline cursor-pointer">개인정보처리방침</span>에 동의하게 됩니다.
-            </p>
-          </div>
         </div>
       </div>
 

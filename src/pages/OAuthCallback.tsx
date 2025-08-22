@@ -71,8 +71,16 @@ const OAuthCallback = () => {
       // AuthContext를 통해 로그인 처리
       login(jwtToken, '', user) // refreshToken은 빈 문자열로 설정
 
-      // 온보딩 페이지로 이동
-      navigate('/onboarding')
+      // 첫 방문 여부 확인하여 적절한 페이지로 이동
+      const hasOnboardingData = localStorage.getItem('onboarding_completed')
+      
+      if (hasOnboardingData) {
+        // 이미 온보딩을 완료한 사용자는 홈으로 이동
+        navigate('/')
+      } else {
+        // 첫 방문 사용자는 온보딩으로 이동
+        navigate('/onboarding')
+      }
 
     } catch (error) {
       console.error('로그인 처리 실패:', error)
