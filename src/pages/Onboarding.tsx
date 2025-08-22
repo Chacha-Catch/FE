@@ -22,8 +22,8 @@ const Onboarding = () => {
   const [grade, setGrade] = useState('2학년')
   const [status, setStatus] = useState('재학')
   const [notificationCategories, setNotificationCategories] = useState<NotificationCategory[]>([
-    { id: 'scholarship', label: '장학금', selected: true },
-    { id: 'international', label: '국제교류', selected: true },
+    { id: 'scholarship', label: '장학금', selected: false },
+    { id: 'international', label: '국제교류', selected: false },
     { id: 'campus', label: '교내 행사', selected: false },
     { id: 'competition', label: '대회', selected: false },
     { id: 'tutor', label: '튜터', selected: false },
@@ -31,8 +31,7 @@ const Onboarding = () => {
     { id: 'department', label: '학과 행사', selected: false }
   ])
   const [keywords, setKeywords] = useState<Keyword[]>([
-    { id: '1', text: '엔지니어링페어' },
-    { id: '2', text: '프로젝트페어' }
+
   ])
   const [newKeyword, setNewKeyword] = useState('')
   const [isFirstVisit, setIsFirstVisit] = useState(true) // 첫 방문 여부
