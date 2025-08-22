@@ -1,13 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { updateUserProfile } from '../services/api'
-
-interface NotificationCategory {
-  id: string
-  label: string
-  selected: boolean
-}
+import { updateUserProfile, getUserProfile, getCategories } from '../services/api'
+import type { Category } from '../services/api'
 
 interface Keyword {
   id: string
@@ -21,60 +16,77 @@ const Onboarding = () => {
   const [department, setDepartment] = useState('컴퓨터융합학부')
   const [grade, setGrade] = useState('2학년')
   const [status, setStatus] = useState('재학')
-  const [notificationCategories, setNotificationCategories] = useState<NotificationCategory[]>([
-    { id: 'scholarship', label: '장학금', selected: false },
-    { id: 'international', label: '국제교류', selected: false },
-    { id: 'campus', label: '교내 행사', selected: false },
-    { id: 'competition', label: '대회', selected: false },
-    { id: 'tutor', label: '튜터', selected: false },
-    { id: 'major', label: '전과', selected: false },
-    { id: 'department', label: '학과 행사', selected: false }
-  ])
-  const [keywords, setKeywords] = useState<Keyword[]>([
-
-  ])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([])
+  const [keywords, setKeywords] = useState<Keyword[]>([])
   const [newKeyword, setNewKeyword] = useState('')
   const [isFirstVisit, setIsFirstVisit] = useState(true) // 첫 방문 여부
   const [isSaving, setIsSaving] = useState(false) // 저장 중 상태
 
-  // 첫 방문 여부 확인 및 이전 설정 불러오기
+  // 카테고리 데이터 가져오기
+  const fetchCategories = async () => {
+    try {
+      const categoryData = await getCategories()
+      setCategories(categoryData)
+    } catch (error) {
+      console.error('카테고리 조회 실패:', error)
+    }
+  }
+
+
+
+  // 컴포넌트 마운트 시 데이터 로드
   useEffect(() => {
-    const hasOnboardingData = localStorage.getItem('onboarding_completed')
-    const savedData = localStorage.getItem('onboarding_data')
-    
-    setIsFirstVisit(!hasOnboardingData)
-    
-    // 이전 설정이 있다면 불러오기
-    if (savedData) {
+    const loadData = async () => {
+      // 카테고리 목록 가져오기
+      await fetchCategories()
+      
+      // 항상 프로필 정보를 가져와서 현재 설정값들 표시
       try {
-        const parsedData = JSON.parse(savedData)
-        setDepartment(parsedData.department || '컴퓨터융합학부')
-        setGrade(parsedData.grade || '2학년')
-        setStatus(parsedData.status || '재학')
+        const profile = await getUserProfile()
+        console.log('👤 기존 프로필 정보:', profile)
         
-        if (parsedData.notificationCategories) {
-          setNotificationCategories(prev => 
-            prev.map(cat => ({
-              ...cat,
-              selected: parsedData.notificationCategories.some((saved: any) => saved.id === cat.id)
+        if (profile && profile.name) {
+          // 프로필이 존재하면 온보딩 완료로 간주하고 기존 값들로 폼 채우기
+          setIsFirstVisit(false)
+          localStorage.setItem('onboarding_completed', 'true')
+          
+          setDepartment(profile.major || '컴퓨터융합학부')
+          setGrade(profile.year ? `${profile.year}학년` : '2학년')
+          setStatus(profile.status || '재학')
+          
+          if (profile.categories) {
+            setSelectedCategoryIds(profile.categories.map(cat => cat.id))
+          }
+          
+          if (profile.keywords) {
+            const keywordObjects = profile.keywords.map((keyword, index) => ({
+              id: Date.now().toString() + index,
+              text: keyword
             }))
-          )
-        }
-        
-        if (parsedData.keywords) {
-          setKeywords(parsedData.keywords)
+            setKeywords(keywordObjects)
+          }
+        } else {
+          // 프로필이 없으면 첫 방문으로 간주
+          setIsFirstVisit(true)
+          localStorage.removeItem('onboarding_completed')
         }
       } catch (error) {
-        console.error('설정 불러오기 실패:', error)
+        console.error('프로필 조회 실패:', error)
+        // 프로필 조회 실패 시 첫 방문으로 간주
+        setIsFirstVisit(true)
+        localStorage.removeItem('onboarding_completed')
       }
     }
+    
+    loadData()
   }, [])
 
-  const toggleCategory = (id: string) => {
-    setNotificationCategories(prev => 
-      prev.map(cat => 
-        cat.id === id ? { ...cat, selected: !cat.selected } : cat
-      )
+  const toggleCategory = (categoryId: number) => {
+    setSelectedCategoryIds(prev => 
+      prev.includes(categoryId) 
+        ? prev.filter(id => id !== categoryId)
+        : [...prev, categoryId]
     )
   }
 
@@ -98,18 +110,17 @@ const Onboarding = () => {
     setIsSaving(true)
 
     try {
-      const onboardingData = {
-        department,
-        grade,
-        status,
-        notificationCategories: notificationCategories.filter(cat => cat.selected),
-        keywords
-      }
-      
-      console.log('저장:', onboardingData)
-      
       // 년도를 숫자로 변환 (1학년 → 1)
       const yearNumber = parseInt(grade.replace('학년', ''))
+      console.log("yearNumber", yearNumber)
+      
+      // 선택된 카테고리 정보 구성
+      const selectedCategories = categories.filter(cat => selectedCategoryIds.includes(cat.id))
+      console.log("selectedCategories", selectedCategories)
+      
+      // 키워드 문자열 배열로 변환
+      const keywordStrings = keywords.map(keyword => keyword.text)
+      console.log("keywordStrings", keywordStrings) 
       
       // API로 프로필 업데이트
       const profileData = {
@@ -117,9 +128,19 @@ const Onboarding = () => {
         major: department,
         year: yearNumber,
         status: status,
-        googleId: user.id,
-        email: user.email
+        categories: selectedCategoryIds,
+        keywords: keywordStrings
       }
+      console.log("profileData", profileData)
+      const onboardingData = {
+        department,
+        grade,
+        status,
+        categories: selectedCategories,
+        keywords: keywordStrings
+      }
+      
+      console.log('저장:', onboardingData)
       
       console.log('🚀 API 프로필 업데이트 요청:', profileData)
       
@@ -261,29 +282,32 @@ const Onboarding = () => {
           알림받을 정보
         </p>
         <div className="flex flex-wrap gap-3">
-          {notificationCategories.map((category) => (
-            <button
-              key={category.id}
-              onClick={() => toggleCategory(category.id)}
-              className="px-6 py-2 rounded-full text-sm font-medium transition-colors"
-              style={{
-                backgroundColor: category.selected ? '#111827' : '#f3f4f6',
-                color: category.selected ? '#ffffff' : '#4b5563'
-              }}
-              onMouseEnter={(e) => {
-                if (!category.selected) {
-                  e.currentTarget.style.backgroundColor = '#e5e7eb'
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!category.selected) {
-                  e.currentTarget.style.backgroundColor = '#f3f4f6'
-                }
-              }}
-            >
-              {category.label}
-            </button>
-          ))}
+          {categories.map((category) => {
+            const isSelected = selectedCategoryIds.includes(category.id)
+            return (
+              <button
+                key={category.id}
+                onClick={() => toggleCategory(category.id)}
+                className="px-6 py-2 rounded-full text-sm font-medium transition-colors"
+                style={{
+                  backgroundColor: isSelected ? '#111827' : '#f3f4f6',
+                  color: isSelected ? '#ffffff' : '#4b5563'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSelected) {
+                    e.currentTarget.style.backgroundColor = '#e5e7eb'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSelected) {
+                    e.currentTarget.style.backgroundColor = '#f3f4f6'
+                  }
+                }}
+              >
+                {category.name}
+              </button>
+            )
+          })}
         </div>
       </div>
 

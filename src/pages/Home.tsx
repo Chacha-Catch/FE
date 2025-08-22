@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import CharacterAlert from '../components/CharacterAlert'
 import NotificationModal from '../components/NotificationModal'
-import { getNotices, getSavedNotices, toggleBookmark as apiToggleBookmark, transformApiNotice, getCategories } from '../services/api'
+import { getNotices, getSavedNotices, toggleBookmark as apiToggleBookmark, transformApiNotice, getCategories, getUserAlarms } from '../services/api'
 import type { NotificationItem, Category } from '../services/api'
 
 const Home = () => {
@@ -16,6 +16,22 @@ const Home = () => {
   const [loading, setLoading] = useState(false)
   const [totalPages, setTotalPages] = useState(1)
   const [bookmarkLoading, setBookmarkLoading] = useState<string | null>(null) // 북마크 로딩 상태
+  const [alarms, setAlarms] = useState<NotificationItem[]>([]) // 알림 데이터
+  const [selectedAlarm, setSelectedAlarm] = useState<NotificationItem | null>(null) // 선택된 알림
+  const [isAlarmModalOpen, setIsAlarmModalOpen] = useState(false) // 알림 모달 열림 상태
+
+  // API에서 알림 데이터 가져오기
+  const fetchAlarms = async () => {
+    try {
+      const alarmData = await getUserAlarms()
+      const transformedAlarms = alarmData.map(transformApiNotice)
+      setAlarms(transformedAlarms)
+      console.log('🔔 변환된 알림 데이터:', transformedAlarms)
+    } catch (error) {
+      console.error('알림 조회 실패:', error)
+      setAlarms([])
+    }
+  }
 
   // API에서 카테고리 데이터 가져오기
   const fetchCategories = async () => {
@@ -96,9 +112,10 @@ const Home = () => {
     }
   }
 
-  // 컴포넌트 마운트 시 카테고리 로드
+  // 컴포넌트 마운트 시 카테고리와 알림 로드
   useEffect(() => {
     fetchCategories()
+    fetchAlarms()
   }, [])
 
   // 필터 변경 시 데이터 로드
@@ -147,13 +164,17 @@ const Home = () => {
     setShowCharacterAlert(false)
   }
 
-  // 새로운 알림 개수 확인
-  const newNotificationsCount = notifications.filter(item => item.isNew).length
 
   // 공지사항 클릭 핸들러
   const handleNotificationClick = (notification: NotificationItem) => {
     setSelectedNotification(notification)
     setIsModalOpen(true)
+  }
+
+  // 알림 클릭 핸들러
+  const handleAlarmClick = (alarm: NotificationItem) => {
+    setSelectedAlarm(alarm)
+    setIsAlarmModalOpen(true)
   }
 
   // 모달 닫기
@@ -182,10 +203,11 @@ const Home = () => {
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white min-h-screen relative">
       {/* 캐릭터 알림 컴포넌트 */}
-      {showCharacterAlert && (
+      {showCharacterAlert && alarms.length > 0 && (
         <CharacterAlert 
-          newNotificationsCount={newNotificationsCount}
+          alarms={alarms}
           onClose={closeCharacterAlert}
+          onAlarmClick={handleAlarmClick}
         />
       )}
 
@@ -194,6 +216,17 @@ const Home = () => {
         notification={selectedNotification}
         isOpen={isModalOpen}
         onClose={closeModal}
+        onToggleBookmark={toggleBookmark}
+      />
+
+      {/* 알림 상세 모달 */}
+      <NotificationModal
+        notification={selectedAlarm}
+        isOpen={isAlarmModalOpen}
+        onClose={() => {
+          setIsAlarmModalOpen(false)
+          setSelectedAlarm(null)
+        }}
         onToggleBookmark={toggleBookmark}
       />
 

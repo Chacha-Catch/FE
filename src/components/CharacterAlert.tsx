@@ -1,17 +1,13 @@
+import type { NotificationItem } from '../services/api'
+
 interface CharacterAlertProps {
-  newNotificationsCount: number
+  alarms: NotificationItem[]
   onClose: () => void
+  onAlarmClick: (alarm: NotificationItem) => void
 }
 
-const CharacterAlert = ({ newNotificationsCount, onClose }: CharacterAlertProps) => {
-  // 캐릭터가 알려줄 새로운 글들 (최대 3개)
-  const newNotificationMessages = [
-    "야! 너 혹시 졸업 프로젝트 주제 고민하고 있었지? 내가 꿀팁 하나 알려줄게! 😎",
-    "야! 너 이거 봐! 조은선 교수님 연구실에서 학부연구생 뽑는대! 졸업 프로젝트랑도 연결 가능하다고 하니까 완전 꿀인듯!",
-    "어? 이건 놓치면 안 되는데! 소프트웨어 특별 장학금 신청 마감이 얼마 안 남았어! 🏃‍♀️💨"
-  ]
-
-  if (newNotificationsCount === 0) {
+const CharacterAlert = ({ alarms, onClose, onAlarmClick }: CharacterAlertProps) => {
+  if (alarms.length === 0) {
     return null
   }
 
@@ -26,19 +22,26 @@ const CharacterAlert = ({ newNotificationsCount, onClose }: CharacterAlertProps)
       <div className="fixed bottom-20 right-6 z-50">
         {/* 말풍선들 */}
         <div className="mb-4 space-y-3">
-        {newNotificationMessages.slice(0, Math.min(3, newNotificationsCount)).map((message, index) => (
+        {alarms.slice(0, Math.min(3, alarms.length)).map((alarm, index) => (
           <div 
-            key={index}
-            className="relative bg-white border-2 border-blue-200 rounded-2xl p-4 shadow-lg max-w-xs animate-bounce"
+            key={alarm.id}
+            onClick={() => onAlarmClick(alarm)}
+            className="relative bg-white border-2 border-blue-200 rounded-2xl p-4 shadow-lg max-w-xs animate-bounce cursor-pointer hover:bg-blue-50 transition-colors"
             style={{ 
               animationDelay: `${index * 0.5}s`,
               animationDuration: '1s',
               animationIterationCount: '3'
             }}
           >
-            <p className="text-sm text-gray-800 font-medium leading-relaxed">
-              {message}
+            <h4 className="text-sm font-bold text-gray-900 mb-1">
+              {alarm.title}
+            </h4>
+            <p className="text-xs text-gray-600 line-clamp-2">
+              {alarm.content.replace(/<br>/g, ' ').substring(0, 60)}...
             </p>
+            <span className="text-xs text-blue-600 font-medium">
+              클릭해서 자세히 보기
+            </span>
             {/* 말풍선 꼬리 */}
             <div className="absolute bottom-0 left-8 transform translate-y-full">
               <div className="w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-blue-200"></div>
@@ -66,7 +69,7 @@ const CharacterAlert = ({ newNotificationsCount, onClose }: CharacterAlertProps)
 
           {/* 새 알림 뱃지 */}
           <div className="absolute -top-1 -left-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs font-bold flex items-center justify-center animate-pulse">
-            {newNotificationsCount}
+            {alarms.length}
           </div>
         </div>
       </div>

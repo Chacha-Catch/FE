@@ -314,6 +314,27 @@ interface UserProfile {
   status: string
   googleId: string
   email: string
+  categories?: Array<{
+    id: number
+    name: string
+  }>
+  keywords?: string[]
+}
+
+// 프로필 조회 함수
+export const getUserProfile = async (): Promise<UserProfile> => {
+  const response = await apiRequestWithRefresh(`${API_BASE_URL}/api/user/me/profile`, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  })
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`)
+  }
+
+  const result = await response.json()
+  console.log('👤 프로필 조회 응답:', result)
+  return result
 }
 
 // 프로필 업데이트 함수
@@ -322,9 +343,9 @@ export const updateUserProfile = async (profileData: {
   major: string
   year: number
   status: string
-  googleId: string
-  email: string
-}): Promise<UserProfile> => {
+  categories: number[]
+  keywords: string[]
+}): Promise<UserProfile | { message: string }> => {
   const response = await apiRequestWithRefresh(`${API_BASE_URL}/api/user/me/profile`, {
     method: 'POST',
     headers: getAuthHeaders(),
@@ -335,8 +356,17 @@ export const updateUserProfile = async (profileData: {
     throw new Error(`HTTP error! status: ${response.status}`)
   }
 
-  const result = await response.json()
-  return result
+  // 응답이 JSON인지 텍스트인지 확인
+  const contentType = response.headers.get('content-type')
+  if (contentType && contentType.includes('application/json')) {
+    const result = await response.json()
+    return result
+  } else {
+    // 텍스트 응답인 경우 (성공 메시지)
+    const textResult = await response.text()
+    console.log('✅ 서버 응답:', textResult)
+    return { message: textResult }
+  }
 }
 
 // 공지사항 검색 함수
@@ -383,6 +413,67 @@ export const getCategories = async (): Promise<Category[]> => {
   }
 
   return await response.json()
+}
+
+// 사용자 맞춤 알림 조회 (공지사항과 동일한 형식)
+export const getUserAlarms = async (): Promise<ApiNotice[]> => {
+  const response = await apiRequestWithRefresh(`${API_BASE_URL}/api/alarms/categories`, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  })
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`)
+  }
+
+  const result = await response.json()
+  console.log('🔔 알림 API 응답:', result)
+  return result
+}
+
+// 키워드 기반 알림 관련 타입 정의
+interface KeywordAlarmApiResponse {
+  url: string
+  summaryId: number
+  summaryText: string
+  createdAt: string
+  keywords: string[]
+  title: string
+}
+
+// 키워드 기반 알림 조회
+export const getKeywordAlarms = async (): Promise<KeywordAlarmApiResponse[]> => {
+  const response = await apiRequestWithRefresh(`${API_BASE_URL}/api/alarms/keywords`, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  })
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`)
+  }
+
+  const result = await response.json()
+  console.log('🔔 키워드 알림 API 응답:', result)
+  return result
+}
+
+// 키워드 알림을 NotificationItem으로 변환
+export const transformKeywordAlarm = (alarm: KeywordAlarmApiResponse): NotificationItem => {
+  return {
+    id: alarm.summaryId.toString(),
+    title: alarm.title,
+    department: '키워드 알림', // 키워드 알림은 부서 정보가 없으므로 기본값
+    date: new Date(alarm.createdAt).toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).replace(/\. /g, '.').replace(/\.$/, ''),
+    isBookmarked: false, // 키워드 알림은 북마크 기능 없음
+    isNew: false,
+    content: alarm.summaryText.replace(/<br>/g, '\n'),
+    image: undefined,
+    originalLink: alarm.url
+  }
 }
 
 // 내부 타입 정의 (기존 Home.tsx에서 사용하던 타입)
