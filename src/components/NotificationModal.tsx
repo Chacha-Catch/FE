@@ -1,3 +1,6 @@
+import { useState } from 'react'
+import { addToGoogleCalendar } from '../services/api'
+
 interface NotificationModalProps {
   notification: {
     id: string
@@ -15,7 +18,25 @@ interface NotificationModalProps {
 }
 
 const NotificationModal = ({ notification, isOpen, onClose, onToggleBookmark }: NotificationModalProps) => {
+  const [isAddingToCalendar, setIsAddingToCalendar] = useState(false)
+
   if (!isOpen || !notification) return null
+
+  const handleAddToCalendar = async () => {
+    if (!notification) return
+
+    setIsAddingToCalendar(true)
+    try {
+      console.log("notification.id", notification.id)
+      await addToGoogleCalendar(notification.id)
+      alert('구글 캘린더에 성공적으로 등록되었습니다!')
+    } catch (error) {
+      console.error('캘린더 등록 실패:', error)
+      alert(`캘린더 등록에 실패했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`)
+    } finally {
+      setIsAddingToCalendar(false)
+    }
+  }
 
   return (
     <>
@@ -55,25 +76,47 @@ const NotificationModal = ({ notification, isOpen, onClose, onToggleBookmark }: 
                 <span>{notification.date}</span>
               </div>
               
-              {/* 북마크 버튼을 하단으로 이동 */}
-              <button
-                onClick={() => onToggleBookmark(notification.id)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <svg 
-                  className={`w-5 h-5 ${notification.isBookmarked ? 'text-navy' : 'text-gray-400'}`}
-                  fill={notification.isBookmarked ? 'currentColor' : 'none'}
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
+              {/* 액션 버튼들 */}
+              <div className="flex items-center gap-1">
+                {/* 캘린더 등록 버튼 */}
+                <button
+                  onClick={handleAddToCalendar}
+                  disabled={isAddingToCalendar}
+                  className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-navy text-navy rounded-md hover:text-white hover:bg-navy/90 disabled:bg-gray-100 disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors text-xs font-medium"
                 >
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeWidth={2} 
-                    d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" 
-                  />
-                </svg>
-              </button>
+                  {isAddingToCalendar ? (
+                    <>
+                      <div className="w-3 h-3 border border-navy border-t-transparent rounded-full animate-spin"></div>
+                      <span>등록중</span>
+                    </>
+                  ) : (
+                    <>
+                      <img src="/calendar.webp" alt="캘린더" className="w-4 h-4" />
+                      <span>캘린더등록</span>
+                    </>
+                  )}
+                </button>
+                
+                {/* 북마크 버튼 */}
+                <button
+                  onClick={() => onToggleBookmark(notification.id)}
+                  className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
+                >
+                  <svg 
+                    className={`w-4 h-4 ${notification.isBookmarked ? 'text-navy' : 'text-gray-400'}`}
+                    fill={notification.isBookmarked ? 'currentColor' : 'none'}
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" 
+                    />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
 

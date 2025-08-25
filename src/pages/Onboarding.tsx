@@ -380,7 +380,7 @@ const Onboarding = () => {
       </button>
 
             {/* Logout Button - 첫 방문이 아닐 때만 표시 */}
-      {!isFirstVisit && (
+      {(
         <button
           onClick={handleLogout}
           className="w-full mt-4 bg-red-500 hover:bg-red-600 text-white py-3 rounded-2xl text-base font-medium transition-colors mb-4"

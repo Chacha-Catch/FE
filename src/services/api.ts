@@ -104,6 +104,8 @@ const getAuthHeaders = () => {
 const apiRequestWithRefresh = async (url: string, options: RequestInit): Promise<Response> => {
   // 첫 번째 요청 시도
   let response = await fetch(url, options)
+
+  return response;
   
   // 401 또는 500 에러이고 토큰이 있는 경우 재발급 시도
   if ((response.status === 401 || response.status === 500) && localStorage.getItem('accessToken')) {
@@ -473,6 +475,42 @@ export const transformKeywordAlarm = (alarm: KeywordAlarmApiResponse): Notificat
     content: alarm.summaryText.replace(/<br>/g, '\n'),
     image: undefined,
     originalLink: alarm.url
+  }
+}
+
+// 구글 캘린더 등록 함수
+export const addToGoogleCalendar = async (noticeId: string | number): Promise<boolean> => {
+  try {
+    // 구글 캘린더 API용 액세스 토큰 가져오기
+    const googleAccessToken = localStorage.getItem('googleAccessToken')
+    
+    if (!googleAccessToken) {
+      throw new Error('구글 캘린더 액세스 토큰이 없습니다. 다시 로그인해주세요.')
+    }
+
+    console.log("noticeId", noticeId)
+    console.log("googleAccessToken", googleAccessToken.substring(0, 20) + '...')
+    
+
+    const response = await apiRequestWithRefresh(`${API_BASE_URL}/api/calendar/${noticeId}`, {
+      method: 'POST',
+      headers: {
+        ...getAuthHeaders(),
+        'X-Google-Access-Token': googleAccessToken
+      }
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('캘린더 등록 실패 응답:', errorText)
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`)
+    }
+
+    console.log('✅ 구글 캘린더 등록 성공:', noticeId)
+    return true
+  } catch (error) {
+    console.error('❌ 구글 캘린더 등록 실패:', error)
+    throw error
   }
 }
 

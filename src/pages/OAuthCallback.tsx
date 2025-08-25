@@ -24,6 +24,10 @@ const OAuthCallback = () => {
       }
       
       if (accessToken) {
+        // 구글 캘린더 API용 토큰 저장
+        localStorage.setItem('googleAccessToken', accessToken)
+        console.log('📅 구글 액세스 토큰 저장됨:', accessToken.substring(0, 20) + '...')
+        
         handleLoginPost(accessToken)
       } else {
         console.error('Access token을 받지 못했습니다.')

@@ -33,6 +33,7 @@ const Login = () => {
       `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
       `&response_type=token` +
       `&scope=email profile`
+      // `&scope=email profile https://www.googleapis.com/auth/calendar`
     
     // 현재 페이지를 Google 인증 페이지로 리다이렉트
     window.location.href = googleAuthUrl

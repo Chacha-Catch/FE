@@ -46,11 +46,12 @@ const Header = () => {
               className="relative hover:scale-105 transition-transform cursor-pointer"
               title="구글 캘린더 열기"
             >
-              <div className="w-9 h-9 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+              <img src="/calendar.webp" alt="캘린더" className="w-9 h-9" />
+              {/* <div className="w-9 h-9 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">
                 31
               </div>
               <div className="absolute bottom-0 left-0 w-3 h-2 bg-yellow-400 rounded-bl-lg"></div>
-              <div className="absolute bottom-0 right-0 w-3 h-2 bg-red-400 rounded-br-lg"></div>
+              <div className="absolute bottom-0 right-0 w-3 h-2 bg-red-400 rounded-br-lg"></div> */}
             </button>
 
             {/* 사용자 프로필 */}
